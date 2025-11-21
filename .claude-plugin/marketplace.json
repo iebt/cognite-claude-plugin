@@ -1,0 +1,13 @@
+{
+"name": "iebt-migrator-marketplace",
+"owner": {
+"name": "Test User"
+},
+"plugins": [
+{
+  "name": "iebt-migrator",
+  "source": "./plugin",
+  "description": "My first test plugin"
+}
+]
+}
