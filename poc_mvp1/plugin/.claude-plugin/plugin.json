@@ -3,6 +3,6 @@
 "description": "A plugin to migrate IEBT projects to the latest .NET version",
 "version": "1.0.0",
 "author": {
-"name": "IEBT"
+"name": "IEBT Migrator"
 }
 }

@@ -1,13 +1,13 @@
 {
-"name": "iebt-migrator-marketplace",
-"owner": {
-"name": "Test User"
-},
-"plugins": [
-{
-  "name": "iebt-migrator",
-  "source": "./plugin",
-  "description": "My first test plugin"
-}
-]
+  "name": "iebt-marketplace3",
+  "owner": {
+    "name": "IEBT"
+  },
+  "plugins": [
+    {
+      "name": "iebt-migrator",
+      "source": "./plugin",
+      "description": "A plugin to migrate IEBT projects to the latest .NET version"
+    }
+  ]
 }
