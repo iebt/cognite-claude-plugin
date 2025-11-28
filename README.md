@@ -11,4 +11,6 @@ Em progresso:
 
 - https://github.com/iebt/puck-cms-platform/pull/1
 
-Próximos passos de algumas tentativas em [next-steps.md](next-steps.md)
+
+# POC MVP2
+
