@@ -7,6 +7,8 @@ Exemplos que já testamos bem sucedidos:
 - https://github.com/iebt/ASPNETCore-WebAPI-Sample/pull/1
 - https://github.com/natenho/Mockaco/pull/161
 
+- criação de testes: https://github.com/iebt/Mockaco-migration-test/pull/1
+
 Em progresso:
 
 - https://github.com/iebt/puck-cms-platform/pull/1
