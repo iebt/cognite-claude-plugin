@@ -1,6 +1,8 @@
-I want to follow the migration plan. Please let's go phase by phase.
+Followthe migration plan. Please let's go phase by phase.
 
-Prompt the user if he wants to: proceed, cancel, or to skip this phase and go to next one
+Based on the current step, give a summary of what will happen with estimated time, and the prompt the user if he wants to: proceed, cancel, or to skip this phase and go to next one
+
+The choices should be navigatable by keyboard shortcuts:
 
 Example of response:
 
@@ -23,7 +25,6 @@ Example of response:
 
   10-15 minutes
 
-─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ←  ☐ Phase 1  ✔ Submit  →
 
 Do you want to proceed with Phase 1: Pre-Migration Preparation & Baseline?
