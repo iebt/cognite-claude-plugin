@@ -89,8 +89,12 @@ async function main() {
   log("Starting IEBT migrator installer...");
 
   const homeDir = os.homedir();
+
+  log('Homedir identified as ', homeDir);
   const repoDir = path.join(homeDir, REPO_DIR_NAME);
   const claudeConfigDir = path.join(homeDir, ".claude");
+
+  log('Claude Dir identified as ', claudeConfigDir);
 
   // 1. git clone repository into user folder (home dir)
   if (fs.existsSync(repoDir)) {
