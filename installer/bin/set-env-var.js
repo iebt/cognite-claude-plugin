@@ -110,27 +110,8 @@ export async function setEnvVar(name, value, options = {}) {
   // 2. Persist for future sessions
   if (process.platform === "win32") {
     // Windows: use PowerShell + [Environment]::SetEnvironmentVariable
-    const target = scope === "system" ? "Machine" : "User";
-
-    // Build a PS script safely using JSON.stringify to avoid quoting hell
-    const psScript = [
-      `$name = ${JSON.stringify(name)}`,
-      `$value = ${JSON.stringify(value)}`,
-      `$target = '${target}'`,
-      "[Environment]::SetEnvironmentVariable($name, $value, $target)"
-    ].join("; ");
-
     try {
-      const command = `powershell -NoProfile -ExecutionPolicy Bypass -Command "${psScript.replace(
-          /"/g,
-          '\\"'
-        )}"`;
-
-      vLog(command);
-      execSync(
-        command,
-        { stdio: "ignore" }
-      );
+      execSync(`setx ${name} "${value}"`, { stdio: "ignore" });
     } catch (err) {
       throw new Error(
         `Failed to set Windows environment variable with PowerShell: ${err.message}`
