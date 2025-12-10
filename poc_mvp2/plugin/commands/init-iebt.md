@@ -177,6 +177,8 @@ Then output:
 Refactor completed.
 
 Next actions:
+- Run /session-logger to registrate the interaction.
+
 - Run: /init-iebt --approve
 - Or:  /init-iebt --refactor
 
@@ -200,6 +202,4 @@ IMPORTANT RULES
 - Do not ask follow-up questions.
 - Always prioritize clarity for migration and future automation tasks.
 - Be precise and avoid assumptions when information is not clearly inferable.
-
-/home/iebt/Downloads/install-iebt-claude.sh
 
