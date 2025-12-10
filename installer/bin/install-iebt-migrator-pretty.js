@@ -15,7 +15,8 @@ function banner() {
   console.log(morning.multiline(ascii));
 }
 
-const CONFIG_PATH = path.join(os.homedir(), ".claude", "iebt-migrator-config.json");
+const HOME_DIR = os.homedir();
+const CONFIG_PATH = path.join(HOME_DIR, ".claude", "iebt-migrator-config.json");
 
 function getConfigSync() {
   let config = {};
@@ -40,6 +41,9 @@ async function step1PullFiles() {
   // Step: Clone repo
   const step1 = p.spinner();
   step1.start("Cloning repository...");
+
+  const repo = "https://github.com/iebt/cognite-claude-plugin.git";
+  const repoDir = path.join(HOME_DIR, "cognite-claude-plugin");
   try {
     execSync(`git clone ${repo} "${repoDir}"`, { stdio: "ignore" });
     step1.stop(chalk.green("Repository cloned"));
@@ -113,13 +117,27 @@ async function step3CheckCertificate() {
   p.note(`Certificate path saved to ${CONFIG_PATH}`, "Config Updated");
 }
 
+async function step4CopyFilesToClaude() {
+  p.note("Copying plugin files into ~/.claude", "File Setup");
+
+  const repoDir = path.join(HOME_DIR, "cognite-claude-plugin");
+
+  const folders = ["commands", "agents"];
+  const target = path.join(HOME_DIR, ".claude");
+
+  if (!fs.existsSync(target)) fs.mkdirSync(target, { recursive: true });
+
+  for (const folder of folders) {
+    const src = path.join(repoDir, 'poc_mvp2/plugin', folder);
+    const dest = path.join(target, folder);
+
+    fs.cpSync(src, dest, { recursive: true });
+  }
+}
+
 async function main() {
   banner();
   p.intro(chalk.cyan("Welcome to the IEBT Migrator Installer"));
-
-  const repo = "https://github.com/iebt/cognite-claude-plugin.git";
-  const home = os.homedir();
-  const repoDir = path.join(home, "cognite-claude-plugin");
 
   await step1PullFiles();
 
@@ -129,19 +147,7 @@ async function main() {
   await step3CheckCertificate();
 
   // Step: Copy folders
-  p.note("Copying plugin files into ~/.claude", "File Setup");
-
-  const folders = ["templates", "migrations"];
-  const target = path.join(home, ".claude");
-
-  if (!fs.existsSync(target)) fs.mkdirSync(target, { recursive: true });
-
-  for (const folder of folders) {
-    const src = path.join(repoDir, folder);
-    const dest = path.join(target, folder);
-
-    fs.cpSync(src, dest, { recursive: true });
-  }
+  await step4CopyFilesToClaude();
 
   p.outro(chalk.green("Installation complete! 🎉"));
 }
