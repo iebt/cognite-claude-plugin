@@ -8,21 +8,8 @@ import path from "path";
 
 import figlet from "figlet";
 import { morning } from "gradient-string";
-
-// Add parsing for --debug from process.argv
-const DEBUG = process.argv.includes("--debug");
-
-// Optionally, log all relevant actions if debug
-function vLog(...args) {
-  if (DEBUG) console.log(chalk.cyanBright("[debug]"), ...args);
-}
-
-// Inform user if in debug mode at startup
-if (DEBUG) {
-  console.log(chalk.gray("Debug mode enabled (--debug)"));
-}
-
-
+import { vLog } from "./v-log.js";
+import { setEnvVar } from "./set-env-var.js";
 
 function banner() {
   const ascii = figlet.textSync("IEBT Migrator", { horizontalLayout: "default" });
@@ -154,70 +141,15 @@ async function step4CopyFilesToClaude() {
 }
 
 async function step5SetEnvVars() {
-  await step5SetNodeExtraCaCerts();
-}
-
-async function step5SetNodeExtraCaCerts() {
-  // Check if NODE_EXTRA_CA_CERTS is set and is correct
-  const nodeExtraCaCertsEnv = process.env.NODE_EXTRA_CA_CERTS;
   const config = getConfigSync();
   const certPath = config.ciscoUmbrellaCertPath;
 
-  if (nodeExtraCaCertsEnv && certPath && path.resolve(nodeExtraCaCertsEnv) === path.resolve(certPath) && fs.existsSync(certPath)) {
+  const result = setEnvVar("NODE_EXTRA_CA_CERTS", certPath, { scope: "user" });
+
+  if (result?.status === 'already-set') {
     p.note(
-      `NODE_EXTRA_CA_CERTS is already set correctly to: ${nodeExtraCaCertsEnv}`,
+      `NODE_EXTRA_CA_CERTS is already set correctly to: ${certPath}`,
       "Environment Variable Already Set"
-    );
-    return;
-  }
-
-  vLog('About to set NODE_EXTRA_CA_CERTS');
-
-  if (certPath && fs.existsSync(certPath)) {
-    // Try to set in appropriate shell profile (~/.bashrc, ~/.zshrc)
-    const shellProfiles = [
-      path.join(HOME_DIR, ".bashrc"),
-      path.join(HOME_DIR, ".zshrc"),
-      path.join(HOME_DIR, ".profile"),
-      path.join(HOME_DIR, ".bash_profile")
-    ];
-
-    const exportLine = `export NODE_EXTRA_CA_CERTS="${certPath}"\n`;
-
-    let updated = false;
-
-    for (const profile of shellProfiles) {
-      if (fs.existsSync(profile)) {
-        vLog('Found shell profile ', profile);
-
-        const contents = fs.readFileSync(profile, "utf8");
-        if (!contents.includes("NODE_EXTRA_CA_CERTS")) {
-          fs.appendFileSync(profile, exportLine);
-          p.note(
-            `Added NODE_EXTRA_CA_CERTS to ${profile}\nRestart your terminal or run:\n\n${exportLine}`,
-            "Environment Variable Updated"
-          );
-          updated = true;
-          break;
-        }
-      }
-    }
-
-    if (!updated) {
-      // None of the profiles exist, create .bashrc by default
-      vLog('No shell profile found. Creating .bashrc');
-
-      const defaultProfile = path.join(HOME_DIR, ".bashrc");
-      fs.appendFileSync(defaultProfile, exportLine);
-      p.note(
-        `Created ${defaultProfile} and set NODE_EXTRA_CA_CERTS.\nRestart your terminal or run:\n\n${exportLine}`,
-        "Environment Variable Set"
-      );
-    }
-  } else {
-    p.note(
-      "Cisco Umbrella certificate path is missing or invalid. Please re-run the installer.",
-      "Env Var Not Set"
     );
   }
 }
@@ -237,7 +169,7 @@ async function main() {
 
   await step5SetEnvVars();
 
-  p.outro(chalk.green("Installation complete! 🎉"));
+  p.outro(chalk.green("Installation complete! 🎉", chalk.blue(" – You need to restart your terminal for installation to apply")));
 }
 
 main();
