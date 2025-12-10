@@ -52,7 +52,15 @@ async function step1PullFiles() {
     execSync(`git clone ${repo} "${repoDir}"`, { stdio: "ignore" });
     step1.stop(chalk.green("Repository cloned"));
   } catch (error) {
-    step1.stop(chalk.yellow("Repository already exists, skipping"));
+    // If already exists, try to git pull latest changes
+    step1.stop(chalk.yellow("Repository already exists, attempting to pull latest changes..."));
+    try {
+      execSync(`git -C "${repoDir}" pull`, { stdio: "ignore" });
+      vLog("Repository updated with latest changes.");
+    } catch (pullErr) {
+      vLog("Failed to pull latest changes:", pullErr);
+      p.note("Could not update the existing repository. Please check your git setup.", "Update Failed");
+    }
     vLog(error);
   }
 }
