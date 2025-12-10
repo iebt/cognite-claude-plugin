@@ -8,7 +8,7 @@ import { vLog } from "./v-log.js";
   // Prompt the user for confirmation before proceeding.
   async function confirmProceed(name, value) {
     const proceed = await p.confirm({
-      message: `Do you want set System Env Var '${name}' to '${value}'?`,
+      message: `Missing required Env Var. Do you want set System Env Var '${name}' to '${value}'?`,
     });
     if (!proceed) {
       vLog(`User canceled set System Env Var ${name} to ${value}`);
@@ -91,6 +91,7 @@ export async function setEnvVar(name, value, options = {}) {
       `${name} is already set correctly to: ${value}`,
       "Environment Variable Already Set"
     );
+    return;
   }
 
   if (!await confirmProceed(name, value)) {
@@ -120,11 +121,14 @@ export async function setEnvVar(name, value, options = {}) {
     ].join("; ");
 
     try {
-      execSync(
-        `powershell -NoProfile -ExecutionPolicy Bypass -Command "${psScript.replace(
+      const command = `powershell -NoProfile -ExecutionPolicy Bypass -Command "${psScript.replace(
           /"/g,
           '\\"'
-        )}"`,
+        )}"`;
+
+      vLog(command);
+      execSync(
+        command,
         { stdio: "ignore" }
       );
     } catch (err) {

@@ -51,8 +51,9 @@ async function step1PullFiles() {
   try {
     execSync(`git clone ${repo} "${repoDir}"`, { stdio: "ignore" });
     step1.stop(chalk.green("Repository cloned"));
-  } catch {
+  } catch (error) {
     step1.stop(chalk.yellow("Repository already exists, skipping"));
+    vLog(error);
   }
 }
 
@@ -144,14 +145,7 @@ async function step5SetEnvVars() {
   const config = getConfigSync();
   const certPath = config.ciscoUmbrellaCertPath;
 
-  const result = await setEnvVar("NODE_EXTRA_CA_CERTS", certPath, { scope: "user" });
-
-  if (result?.status === 'already-set') {
-    p.note(
-      `NODE_EXTRA_CA_CERTS is already set correctly to: ${certPath}`,
-      "Environment Variable Already Set"
-    );
-  }
+  await setEnvVar("NODE_EXTRA_CA_CERTS", certPath, { scope: "user" });
 }
 
 async function main() {
