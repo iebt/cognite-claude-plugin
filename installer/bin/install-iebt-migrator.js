@@ -9,6 +9,20 @@ import path from "path";
 import figlet from "figlet";
 import { morning } from "gradient-string";
 
+// Add parsing for --debug from process.argv
+const DEBUG = process.argv.includes("--debug");
+
+// Optionally, log all relevant actions if debug
+function vLog(...args) {
+  if (DEBUG) console.log(chalk.cyanBright("[debug]"), ...args);
+}
+
+// Inform user if in debug mode at startup
+if (DEBUG) {
+  console.log(chalk.gray("Debug mode enabled (--debug)"));
+}
+
+
 
 function banner() {
   const ascii = figlet.textSync("IEBT Migrator", { horizontalLayout: "default" });
@@ -17,6 +31,9 @@ function banner() {
 
 const HOME_DIR = os.homedir();
 const CONFIG_PATH = path.join(HOME_DIR, ".claude", "iebt-migrator-config.json");
+
+vLog('HOME_DIR: ', HOME_DIR);
+vLog('CONFIG_PATH: ', CONFIG_PATH);
 
 function getConfigSync() {
   let config = {};
@@ -88,6 +105,8 @@ async function step3CheckCertificate() {
   const DEFAULT_CERT_PATH = "C:\\certs\\Cisco_Umbrella_Root_CA.cer";
 
   let certPath = config.ciscoUmbrellaCertPath || DEFAULT_CERT_PATH;
+
+  vLog('Config: ', config);
 
   // Check if default cert exists
   if (!fs.existsSync(certPath)) {
