@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Installer for IEBT migrator / cognite-claude-plugin assets",
   "bin": {
-    "install-iebt-migrator": "./bin/install-iebt-migrator.js"
+    "install-iebt-migrator": "bin/install-iebt-migrator.js"
   },
   "scripts": {
     "start": "node ./bin/install-iebt-migrator.js"

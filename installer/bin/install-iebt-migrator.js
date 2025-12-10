@@ -1,183 +1,155 @@
 #!/usr/bin/env node
+import * as p from "@clack/prompts";
+import chalk from "chalk";
+import { execSync } from "child_process";
+import fs from "fs";
+import os from "os";
+import path from "path";
 
-const { execSync } = require("child_process");
-const fs = require("fs");
-const path = require("path");
-const os = require("os");
-const readline = require("readline");
+import figlet from "figlet";
+import { morning } from "gradient-string";
 
-// CONFIG – tweak as needed
-const REPO_URL = "https://github.com/iebt/cognite-claude-plugin.git";
-const REPO_DIR_NAME = "cognite-claude-plugin"; // folder under home where we clone
-const CLAUDE_CLI_NAME = "claude"; // command to check
-const FOLDERS_TO_COPY = [
-  // relative paths inside the repo to copy into ~/.claude
-  "templates",
-  "migrations"
-];
 
-function log(msg) {
-  console.log(`> ${msg}`);
+function banner() {
+  const ascii = figlet.textSync("IEBT Migrator", { horizontalLayout: "default" });
+  console.log(morning.multiline(ascii));
 }
 
-function runCommand(cmd, options = {}) {
-  try {
-    execSync(cmd, { stdio: "inherit", ...options });
-    return true;
-  } catch (err) {
-    return false;
-  }
-}
+const HOME_DIR = os.homedir();
+const CONFIG_PATH = path.join(HOME_DIR, ".claude", "iebt-migrator-config.json");
 
-function isCommandAvailable(cmd) {
-  try {
-    if (process.platform === "win32") {
-      execSync(`where ${cmd}`, { stdio: "ignore" });
-    } else {
-      execSync(`command -v ${cmd}`, { stdio: "ignore" });
+function getConfigSync() {
+  let config = {};
+
+  if (fs.existsSync(CONFIG_PATH)) {
+    try {
+      config = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8"));
+    } catch {
+      config = {};
+      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), "utf8");
     }
-    return true;
+  }
+
+  return config;
+}
+
+function writeConfigSync(config) {
+  fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), "utf8");
+}
+
+async function step1PullFiles() {
+  // Step: Clone repo
+  const step1 = p.spinner();
+  step1.start("Cloning repository...");
+
+  const repo = "https://github.com/iebt/cognite-claude-plugin.git";
+  const repoDir = path.join(HOME_DIR, "cognite-claude-plugin");
+  try {
+    execSync(`git clone ${repo} "${repoDir}"`, { stdio: "ignore" });
+    step1.stop(chalk.green("Repository cloned"));
   } catch {
-    return false;
+    step1.stop(chalk.yellow("Repository already exists, skipping"));
   }
 }
 
-function askYesNo(question) {
-  return new Promise((resolve) => {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout
+async function step2InstallClaude() {
+  const step2 = p.spinner();
+  step2.start("Checking for Claude CLI...");
+  let claudeInstalled = false;
+  try {
+    // Use execSync to run "claude --version" and capture the result
+    const result = execSync("claude --version", { stdio: "pipe" }).toString().trim();
+    claudeInstalled = true;
+    step2.stop(chalk.green(`Claude is installed (${result})`));
+  } catch {
+    step2.stop(chalk.red("Claude not found"));
+  }
+
+  if (!claudeInstalled) {
+    const install = await p.confirm({
+      message: "Claude is not installed. Install globally?",
     });
 
-    rl.question(`${question} (y/N) `, (answer) => {
-      rl.close();
-      const normalized = (answer || "").trim().toLowerCase();
-      resolve(normalized === "y" || normalized === "yes");
-    });
-  });
+    if (install) {
+      const spinner = p.spinner();
+      spinner.start("Installing Claude globally...");
+      try {
+        execSync("npm install -g @anthropic-ai/claude-code", { stdio: "inherit" });
+        spinner.stop(chalk.green("Claude installed successfully"));
+      } catch {
+        spinner.stop(chalk.red("Installation failed"));
+      }
+    }
+  }
 }
 
-// Recursively copy directories/files
-function copyRecursive(src, dest) {
-  if (!fs.existsSync(src)) {
-    log(`WARNING: source does not exist, skipping: ${src}`);
+async function step3CheckCertificate() {
+  const config = getConfigSync();
+  const DEFAULT_CERT_PATH = "C:\\certs\\Cisco_Umbrella_Root_CA.cer";
+
+  let certPath = config.ciscoUmbrellaCertPath || DEFAULT_CERT_PATH;
+
+  // Check if default cert exists
+  if (!fs.existsSync(certPath)) {
+    p.note(
+      `Certificate file was not found at: ${certPath}\n` +
+      "Let's set the location of your Cisco Umbrella Root CA certificate.",
+      "Certificate Not Found"
+    );
+
+    certPath = await p.text({
+      message: "Enter the absolute path to your Cisco_Umbrella_Root_CA.cer",
+      placeholder: DEFAULT_CERT_PATH,
+      validate: (value) =>
+        fs.existsSync(value)
+          ? undefined
+          : `File does not exist at ${value}`,
+    });
+    p.note(`Using certificate: ${certPath}`);
+  } else {
+    p.note(`Certificate already exists at: ${certPath}`, "Found Certificate");
     return;
   }
 
-  const stat = fs.statSync(src);
 
-  if (stat.isDirectory()) {
-    if (!fs.existsSync(dest)) {
-      fs.mkdirSync(dest, { recursive: true });
-    }
-    for (const entry of fs.readdirSync(src)) {
-      const srcPath = path.join(src, entry);
-      const destPath = path.join(dest, entry);
-      copyRecursive(srcPath, destPath);
-    }
-  } else {
-    // file
-    const destDir = path.dirname(dest);
-    if (!fs.existsSync(destDir)) {
-      fs.mkdirSync(destDir, { recursive: true });
-    }
-    fs.copyFileSync(src, dest);
+  config.ciscoUmbrellaCertPath = certPath;
+  writeConfigSync(config);
+  p.note(`Certificate path saved to ${CONFIG_PATH}`, "Config Updated");
+}
+
+async function step4CopyFilesToClaude() {
+  p.note("Copying plugin files into ~/.claude", "File Setup");
+
+  const repoDir = path.join(HOME_DIR, "cognite-claude-plugin");
+
+  const folders = ["commands", "agents"];
+  const target = path.join(HOME_DIR, ".claude");
+
+  if (!fs.existsSync(target)) fs.mkdirSync(target, { recursive: true });
+
+  for (const folder of folders) {
+    const src = path.join(repoDir, 'poc_mvp2/plugin', folder);
+    const dest = path.join(target, folder);
+
+    fs.cpSync(src, dest, { recursive: true });
   }
 }
 
 async function main() {
-  log("Starting IEBT migrator installer...");
+  banner();
+  p.intro(chalk.cyan("Welcome to the IEBT Migrator Installer"));
 
-  const homeDir = os.homedir();
+  await step1PullFiles();
 
-  log('Homedir identified as ', homeDir);
-  const repoDir = path.join(homeDir, REPO_DIR_NAME);
-  const claudeConfigDir = path.join(homeDir, ".claude");
+  // Step: Check Claude installation
+  await step2InstallClaude();
 
-  log('Claude Dir identified as ', claudeConfigDir);
+  await step3CheckCertificate();
 
-  // 1. git clone repository into user folder (home dir)
-  if (fs.existsSync(repoDir)) {
-    log(`Repo directory already exists at ${repoDir}, skipping clone.`);
-  } else {
-    log(`Cloning ${REPO_URL} into ${repoDir}...`);
-    const success = runCommand(`git clone ${REPO_URL} "${repoDir}"`);
-    if (!success) {
-      console.error("ERROR: git clone failed. Please check your git setup and try again.");
-      process.exit(1);
-    }
-  }
+  // Step: Copy folders
+  await step4CopyFilesToClaude();
 
-  // 2. Check if Claude is installed globally
-  log(`Checking if "${CLAUDE_CLI_NAME}" CLI is installed globally...`);
-  let claudeAvailable = isCommandAvailable(CLAUDE_CLI_NAME);
-
-  if (!claudeAvailable) {
-    const wantsInstall = await askYesNo(
-      `"${CLAUDE_CLI_NAME}" was not found in PATH. Do you want to install it globally with npm?`
-    );
-
-    if (wantsInstall) {
-      log(`Installing ${CLAUDE_CLI_NAME} globally with npm...`);
-      const installed = runCommand(`npm install -g ${CLAUDE_CLI_NAME}`);
-      if (!installed) {
-        console.error("ERROR: Failed to install Claude globally via npm.");
-      } else {
-        claudeAvailable = isCommandAvailable(CLAUDE_CLI_NAME);
-      }
-    } else {
-      log("Skipping Claude installation as requested.");
-    }
-  }
-
-  // 3. Check if installation worked, if not ask about env var
-  if (!claudeAvailable) {
-    const wantsEnvHelp = await askYesNo(
-      `"${CLAUDE_CLI_NAME}" is still not available. Do you want tips on fixing your PATH environment variable?`
-    );
-
-    if (wantsEnvHelp) {
-      console.log(`
-You might need to add your global npm bin directory to PATH.
-
-Common locations:
-  - macOS/Linux:  ~/.npm-global/bin  or  $(npm bin -g)
-  - Windows:      %APPDATA%\\npm
-
-Example for bash/zsh (macOS/Linux):
-  echo 'export PATH="$(npm bin -g):$PATH"' >> ~/.bashrc
-  source ~/.bashrc
-
-After fixing PATH, try running:  ${CLAUDE_CLI_NAME} --help
-`);
-    }
-  } else {
-    log(`"${CLAUDE_CLI_NAME}" CLI is available.`);
-  }
-
-  // 4. Copy some folders from repo into ~/.claude
-  log(`Ensuring Claude config directory exists at ${claudeConfigDir}...`);
-  if (!fs.existsSync(claudeConfigDir)) {
-    fs.mkdirSync(claudeConfigDir, { recursive: true });
-  }
-
-  log("Copying folders from repository into ~/.claude...");
-  for (const folder of FOLDERS_TO_COPY) {
-    const src = path.join(repoDir, folder);
-    const dest = path.join(claudeConfigDir, folder);
-
-    log(`- Copying ${src} -> ${dest}`);
-    try {
-      copyRecursive(src, dest);
-    } catch (err) {
-      console.error(`ERROR copying ${folder}:`, err.message);
-    }
-  }
-
-  log("Done! IEBT migrator installation steps completed.");
+  p.outro(chalk.green("Installation complete! 🎉"));
 }
 
-main().catch((err) => {
-  console.error("Unexpected error:", err);
-  process.exit(1);
-});
+main();
