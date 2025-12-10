@@ -93,7 +93,7 @@ async function step3CheckCertificate() {
 
   let certPath = config.ciscoUmbrellaCertPath || DEFAULT_CERT_PATH;
 
-  vLog('Config: ', config);
+  vLog('Config: ', JSON.stringify(config, null, 2));
 
   // Check if default cert exists
   if (!fs.existsSync(certPath)) {
@@ -144,7 +144,7 @@ async function step5SetEnvVars() {
   const config = getConfigSync();
   const certPath = config.ciscoUmbrellaCertPath;
 
-  const result = setEnvVar("NODE_EXTRA_CA_CERTS", certPath, { scope: "user" });
+  const result = await setEnvVar("NODE_EXTRA_CA_CERTS", certPath, { scope: "user" });
 
   if (result?.status === 'already-set') {
     p.note(

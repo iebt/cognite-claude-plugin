@@ -1,13 +1,26 @@
+import * as p from "@clack/prompts";
 import fs from "fs";
 import os from "os";
 import path from "path";
 import { execSync } from "child_process";
 import { vLog } from "./v-log.js";
 
+  // Prompt the user for confirmation before proceeding.
+  async function confirmProceed(name, value) {
+    const proceed = await p.confirm({
+      message: `Do you want set System Env Var '${name}' to '${value}'?`,
+    });
+    if (!proceed) {
+      vLog(`User canceled set System Env Var ${name} to ${value}`);
+      return false;
+    }
+    return true;
+  }
+
 /**
  * Ensure a line exists in a text file, replacing previous export for same var if present.
  */
-function ensureExportInFile(filePath, varName, exportLine) {
+async function ensureExportInFile(filePath, varName, exportLine) {
   let contents = "";
   if (fs.existsSync(filePath)) {
     contents = fs.readFileSync(filePath, "utf8");
@@ -70,11 +83,18 @@ function detectUnixProfile() {
  *
  * scope: 'user' | 'system' (system requires admin on Windows)
  */
-export function setEnvVar(name, value, options = {}) {
+export async function setEnvVar(name, value, options = {}) {
   const scope = options.scope || "user";
 
   if (process.env[name] && process.env[name] === value) {
-    return { status: 'already-set' };
+    p.note(
+      `${name} is already set correctly to: ${value}`,
+      "Environment Variable Already Set"
+    );
+  }
+
+  if (!await confirmProceed(name, value)) {
+    return;
   }
 
   if (!name) {
@@ -122,7 +142,7 @@ export function setEnvVar(name, value, options = {}) {
     vLog('About to set ', exportLine);
 
     try {
-      ensureExportInFile(profilePath, name, exportLine);
+      await ensureExportInFile(profilePath, name, exportLine);
     } catch (err) {
       throw new Error(
         `Failed to write env var to profile (${profilePath}): ${err.message}`
