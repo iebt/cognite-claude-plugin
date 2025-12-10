@@ -8,6 +8,7 @@
   "scripts": {
     "start": "node ./bin/install-iebt-migrator.js"
   },
+  "type": "module",
   "license": "MIT",
   "author": "Your Name",
   "dependencies": {
