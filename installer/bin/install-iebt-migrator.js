@@ -155,7 +155,7 @@ async function step4CopyFilesToClaude() {
   if (!fs.existsSync(target)) fs.mkdirSync(target, { recursive: true });
 
   for (const folder of folders) {
-    const src = path.join(repoDir, 'poc_mvp2/plugin', folder);
+    const src = path.join(repoDir, 'plugin', folder);
     const dest = path.join(target, folder);
 
     fs.cpSync(src, dest, { recursive: true });
