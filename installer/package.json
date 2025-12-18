@@ -1,6 +1,6 @@
 {
   "name": "install-iebt-migrator",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Installer for IEBT migrator",
   "bin": {
     "install-iebt-migrator": "bin/install-iebt-migrator.js"

@@ -41,33 +41,40 @@ function writeConfigSync(config) {
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), "utf8");
 }
 
+async function sleep(ms) {
+  await new Promise(resolve => setTimeout(() => resolve(), ms));
+}
+
 async function step1PullFiles() {
   // Step: Clone repo
   const step1 = p.spinner();
-  step1.start("Cloning repository...");
+  step1.start("Downloading specialized agents...");
+  await sleep(3000);
 
   const repo = "https://github.com/iebt/cognite-claude-plugin.git";
   const repoDir = path.join(HOME_DIR, "cognite-claude-plugin");
   try {
     execSync(`git clone ${repo} "${repoDir}"`, { stdio: "ignore" });
-    step1.stop(chalk.green("Repository cloned"));
+    step1.stop(chalk.green("Agents downloaded. Saved at ", repoDir));
   } catch (error) {
     // If already exists, try to git pull latest changes
-    step1.stop(chalk.yellow("Repository already exists, attempting to pull latest changes..."));
+    vLog(error);
+    step1.message(chalk.yellow("Specialized agents already download, attempting to pull latest changes..."));
     try {
       execSync(`git -C "${repoDir}" pull`, { stdio: "ignore" });
-      vLog("Repository updated with latest changes.");
+      step1.stop(chalk.green(`Agents updated with latest changes at ${repoDir}`));
     } catch (pullErr) {
       vLog("Failed to pull latest changes:", pullErr);
       p.note("Could not update the existing repository. Please check your git setup.", "Update Failed");
     }
-    vLog(error);
   }
 }
 
 async function step2InstallClaude() {
   const step2 = p.spinner();
-  step2.start("Checking for Claude CLI...");
+  step2.start("Checking if Claude Code is installed...");
+  await sleep(3000);
+
   let claudeInstalled = false;
   try {
     // Use execSync to run "claude --version" and capture the result
@@ -97,6 +104,10 @@ async function step2InstallClaude() {
 }
 
 async function step3CheckCertificate() {
+  const step3 = p.spinner();
+  step3.start("Checking if Umbrella Certificate is installed...");
+  await sleep(3000);
+
   const config = getConfigSync();
   const DEFAULT_CERT_PATH = "C:\\certs\\Cisco_Umbrella_Root_CA.cer";
 
@@ -106,10 +117,10 @@ async function step3CheckCertificate() {
 
   // Check if default cert exists
   if (!fs.existsSync(certPath)) {
+    step3.stop(chalk.yellow("Umbrella Certificate not found"));
     p.note(
-      `Certificate file was not found at: ${certPath}\n` +
-      "Let's set the location of your Cisco Umbrella Root CA certificate.",
-      "Certificate Not Found"
+      `Certificate file was not found at path: ${certPath}\n` +
+      "Let's set the location of your Cisco Umbrella Root CA certificate."
     );
 
     certPath = await p.text({
@@ -122,17 +133,19 @@ async function step3CheckCertificate() {
     });
     p.note(`Using certificate: ${certPath}`);
   } else {
-    p.note(`Certificate already exists at: ${certPath}`, "Found Certificate");
+    step3.stop(chalk.green(`Found Umbrella Certificate at: ${certPath}`));
   }
 
 
   config.ciscoUmbrellaCertPath = certPath;
   writeConfigSync(config);
-  p.note(`Certificate path saved to ${CONFIG_PATH}`, "Config Updated");
+  vLog(`Certificate path saved to ${CONFIG_PATH}`, "Config Updated");
 }
 
 async function step4CopyFilesToClaude() {
-  p.note("Copying plugin files into ~/.claude", "File Setup");
+  const step4 = p.spinner();
+  step4.start("Installing specialized migration agents in Claude...");
+  await sleep(3000);
 
   const repoDir = path.join(HOME_DIR, "cognite-claude-plugin");
 
@@ -147,13 +160,23 @@ async function step4CopyFilesToClaude() {
 
     fs.cpSync(src, dest, { recursive: true });
   }
+
+  step4.stop(chalk.green(`Specialized agents installed at ${target}`));
 }
 
 async function step5SetEnvVars() {
+  const step5 = p.spinner();
+  step5.start("Adding required environment variables...");
+  await sleep(3000);
+
   const config = getConfigSync();
   const certPath = config.ciscoUmbrellaCertPath;
 
   await setEnvVar("NODE_EXTRA_CA_CERTS", certPath, { scope: "user" });
+
+  const installedEnvVars = ["NODE_EXTRA_CA_CERTS"];
+
+  step5.stop(chalk.green(`environment variables successfuly set: [${installedEnvVars.join(', ')}]`));
 }
 
 async function main() {

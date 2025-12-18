@@ -87,7 +87,7 @@ export async function setEnvVar(name, value, options = {}) {
   const scope = options.scope || "user";
 
   if (process.env[name] && process.env[name] === value) {
-    p.note(
+    vLog(
       `${name} is already set correctly to: ${value}`,
       "Environment Variable Already Set"
     );
