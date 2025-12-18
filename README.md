@@ -1,18 +1,7 @@
-Projeto de Plugin para o Claude Code para migrar projetos .NET para versões mais modernas.
+# IEBT Migrator
 
-# POC MVP1
+O **IEBT Migrator** é um pipeline de migração que apoia a evolução de projetos legados para versões mais recentes da tecnologia empregada, automatizando etapas do processo e reduzindo o esforço manual e risco de regressão.
 
-Exemplos que já testamos bem sucedidos:
+# Instalação
 
-- https://github.com/iebt/ASPNETCore-WebAPI-Sample/pull/1
-- https://github.com/natenho/Mockaco/pull/161
-
-- criação de testes: https://github.com/iebt/Mockaco-migration-test/pull/1
-
-Em progresso:
-
-- https://github.com/iebt/puck-cms-platform/pull/1
-
-
-# POC MVP2
-
+Basta seguir as orientações do [MANUAL DE INSTALAÇÃO](./installer/README.md).
