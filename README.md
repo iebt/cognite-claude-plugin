@@ -1,6 +1,6 @@
 # IEBT Migrator
 
-<img width="582" height="190" alt="image" src="https://github.com/user-attachments/assets/e130e0e9-35e4-447f-b561-e18df1d9dd57" />
+<img width="582" height="190" alt="IEBT Migrator" src="https://github.com/user-attachments/assets/e130e0e9-35e4-447f-b561-e18df1d9dd57" />
 
 
 
