@@ -7,10 +7,10 @@ Esse é o instalador do Modernizador de Legado do IEBT.
 Basta rodar:
 
 ```sh
-npx install-iebt-migration
+npx install-iebt-migrator
 
 # ou com a opção de debug para mais logs:
-npx install-iebt-migration --debug
+npx install-iebt-migrator --debug
 ```
 
 E ele vai seguir os seguintes passos:
