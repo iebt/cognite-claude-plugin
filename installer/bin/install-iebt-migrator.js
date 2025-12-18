@@ -194,7 +194,7 @@ async function main() {
 
   await step5SetEnvVars();
 
-  p.outro(chalk.green("Installation complete! 🎉", chalk.blue(" – You need to restart your terminal for installation to apply")));
+  p.outro(chalk.green("Installation complete!", chalk.blueBright(" – You need to restart your terminal for installation to apply")));
 }
 
 main();
